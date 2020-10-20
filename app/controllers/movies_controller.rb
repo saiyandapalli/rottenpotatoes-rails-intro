@@ -7,9 +7,44 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @movies = Movie.all
+    @all_ratings = Movie.all_ratings
+    @sort = params[:sort] || session[:sort]
+    
+    # for sorting label hiliting 
+    if @sort == 'title'
+        @movie_title_hilite = 'hilite'
+        @release_date_hilite = ''
+    elsif @sort == 'release_date'
+        @movie_title_hilite = ''
+        @release_date_hilite = 'hilite'
+    else 
+        @movie_title_hilite = ''
+        @release_date_hilite = ''
+    end 
+    
+    # for properly populating @ratings_to_show
+    if params[:ratings]
+      if params[:ratings].kind_of?(Hash)
+        @ratings_array = params[:ratings].keys
+        @ratings_to_show = params[:ratings].keys
+      else
+        @ratings_array = params[:ratings]
+        @ratings_to_show = params[:ratings]
+      end
+    elsif session[:ratings]
+      @ratings_to_show = session[:ratings]
+    else 
+      @ratings_to_show = @all_ratings
+    end
+    
+    # for managing session
+    if params[:sort] != session[:sort] or @ratings_array != session[:ratings]
+      session[:sort], session[:ratings] = @sort, @ratings_to_show
+      redirect_to movies_path sort: @sort, ratings: @ratings_to_show
+    end
+    @movies = Movie.with_ratings(@ratings_to_show).order(@sort)
   end
-
+  
   def new
     # default: render 'new' template
   end
